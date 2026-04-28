@@ -18,9 +18,9 @@ export default function LoginPage({ onLogin }) {
       let role = '';
       if (email === 'admin@admin.com' && password === 'admin123') {
         role = 'superadmin';
-      } else if (email === 'lecturer@lecturer.com' && password === 'lecturer123') {
+      } else if (email === 'sarah.smith@university.edu' && password === 'lecturer123') {
         role = 'lecturer';
-      } else if (email === 'student@student.com' && password === 'student123') {
+      } else if (email === 'alice.j@student.edu' && password === 'student123') {
         role = 'student';
       }
 
@@ -36,8 +36,8 @@ export default function LoginPage({ onLogin }) {
   const handleQuickLogin = (role) => {
     const creds = {
       superadmin: { email: 'admin@admin.com', role: 'superadmin' },
-      lecturer:   { email: 'lecturer@lecturer.com', role: 'lecturer' },
-      student:    { email: 'student@student.com', role: 'student' }
+      lecturer:   { email: 'sarah.smith@university.edu', role: 'lecturer' },
+      student:    { email: 'alice.j@student.edu', role: 'student' }
     };
     onLogin(creds[role]);
   };

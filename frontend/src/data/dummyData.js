@@ -47,12 +47,12 @@ export const LECTURERS = [
 ];
 
 export const STUDENTS = [
-  { id: 's1', name: 'Alice Johnson', email: 'alice.j@student.edu', matric: 'UNI/2021/001', avatar: 'AJ' },
-  { id: 's2', name: 'Brian Eze',      email: 'brian.e@student.edu', matric: 'UNI/2021/002', avatar: 'BE' },
-  { id: 's3', name: 'Clara Adeyemi',  email: 'clara.a@student.edu', matric: 'UNI/2021/003', avatar: 'CA' },
-  { id: 's4', name: 'David Owusu',    email: 'd.owusu@student.edu', matric: 'UNI/2021/004', avatar: 'DO' },
-  { id: 's5', name: 'Ella Mbeki',     email: 'ella.m@student.edu',  matric: 'UNI/2021/005', avatar: 'EM' },
-  { id: 's6', name: 'Felix Kojo',     email: 'felix.k@student.edu', matric: 'UNI/2021/006', avatar: 'FK' },
+  { id: 's1', name: 'Alice Johnson', email: 'alice.j@student.edu', matric: 'UNI/2021/001', avatar: 'AJ', courseIds: ['c1', 'c2', 'c4'] },
+  { id: 's2', name: 'Brian Eze',      email: 'brian.e@student.edu', matric: 'UNI/2021/002', avatar: 'BE', courseIds: ['c1', 'c2', 'c3'] },
+  { id: 's3', name: 'Clara Adeyemi',  email: 'clara.a@student.edu', matric: 'UNI/2021/003', avatar: 'CA', courseIds: ['c1', 'c2', 'c4'] },
+  { id: 's4', name: 'David Owusu',    email: 'd.owusu@student.edu', matric: 'UNI/2021/004', avatar: 'DO', courseIds: ['c1', 'c2', 'c3'] },
+  { id: 's5', name: 'Ella Mbeki',     email: 'ella.m@student.edu',  matric: 'UNI/2021/005', avatar: 'EM', courseIds: ['c1', 'c3'] },
+  { id: 's6', name: 'Felix Kojo',     email: 'felix.k@student.edu', matric: 'UNI/2021/006', avatar: 'FK', courseIds: ['c1', 'c3', 'c4'] },
 ];
 
 export const ATTENDANCE_RECORDS = {
@@ -162,12 +162,6 @@ export const ATTENDANCE_RECORDS = {
   },
 };
 
-// Student s1 (Alice) is logged-in student
-export const CURRENT_STUDENT = STUDENTS[0];
-
-// Lecturer l1 (Dr. Sarah Smith) is the logged-in lecturer
-export const CURRENT_LECTURER = LECTURERS[0];
-
 // Helper: compute attendance percentage
 export function calcAttendance(records) {
   if (!records || records.length === 0) return 0;
@@ -180,13 +174,14 @@ export function generateSessionId() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-// Enrolled students per course (derived from ATTENDANCE_RECORDS)
-export function getEnrolledStudents(courseId) {
-  const rec = ATTENDANCE_RECORDS[courseId] || {};
-  return Object.keys(rec).map(sid => STUDENTS.find(s => s.id === sid)).filter(Boolean);
+// Enrolled students per course (derived from student objects)
+export function getEnrolledStudents(courseId, studentList = STUDENTS) {
+  return studentList.filter(s => s.courseIds.includes(courseId));
 }
 
 // Active sessions dummy
 export const ACTIVE_SESSIONS = [
   { courseId: 'c1', sessionId: '552109', startedAt: '09:15 AM', location: '3.2km within campus' },
 ];
+
+export const CURRENT_STUDENT = STUDENTS[0];

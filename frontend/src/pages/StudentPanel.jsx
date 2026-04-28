@@ -10,8 +10,7 @@ import {
   calcAttendance, ACTIVE_SESSIONS,
 } from '../data/dummyData.js';
 
-// Courses Alice is enrolled in
-const ALICE_COURSES = ['c1', 'c2', 'c4'];
+
 
 // ─── Mark Attendance Page ─────────────────────────────────────────────────────
 function MarkAttendancePage() {
@@ -173,7 +172,8 @@ function MarkAttendancePage() {
 
 // ─── My Courses Page ──────────────────────────────────────────────────────────
 function MyCoursesPage({ student }) {
-  const myCourses = COURSES.filter(c => ALICE_COURSES.includes(c.id));
+  const courseIds = student?.courseIds || [];
+  const myCourses = COURSES.filter(c => courseIds.includes(c.id));
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
@@ -199,7 +199,7 @@ function MyCoursesPage({ student }) {
                     { label: 'Present', value: present, col: '#009688', bg: '#e0f2f1' },
                     { label: 'Absent', value: records.length - present, col: '#ef4444', bg: '#fee2e2' },
                     { label: 'Total', value: records.length, col: '#2563eb', bg: '#dbeafe' },
-                    { label: 'Rate', value: `${pct}%`, col, bg: color === '#009688' ? '#e0f2f1' : color === '#f59e0b' ? '#fef9c3' : '#fee2e2' },
+                    { label: 'Rate', value: `${pct}%`, col: color, bg: color === '#009688' ? '#e0f2f1' : color === '#f59e0b' ? '#fef9c3' : '#fee2e2' },
                   ].map(item => (
                     <div key={item.label} style={{ background: item.bg, borderRadius: 10, padding: '10px 14px' }}>
                       <div style={{ fontSize: 20, fontWeight: 800, color: item.col }}>{item.value}</div>
@@ -248,7 +248,8 @@ function MyCoursesPage({ student }) {
 
 // ─── Student Overview Page ────────────────────────────────────────────────────
 function StudentOverview({ student, onGoMark }) {
-  const myCourses = COURSES.filter(c => ALICE_COURSES.includes(c.id));
+  const courseIds = student?.courseIds || [];
+  const myCourses = COURSES.filter(c => courseIds.includes(c.id));
   const totalPresent = myCourses.reduce((acc, c) => {
     const recs = ATTENDANCE_RECORDS[c.id]?.[student.id] || [];
     return acc + recs.filter(r => r.status === 'present').length;
@@ -368,8 +369,8 @@ function StudentOverview({ student, onGoMark }) {
 }
 
 // ─── Main Student Dashboard ───────────────────────────────────────────────────
-export default function StudentDashboard({ activePage, setActivePage }) {
-  const student = CURRENT_STUDENT;
+export default function StudentDashboard({ activePage, setActivePage, user }) {
+  const student = user || CURRENT_STUDENT;
 
   const titles = {
     overview: { title: 'My Dashboard',      sub: `Welcome back, ${student.name.split(' ')[0]}!` },

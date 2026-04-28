@@ -1,10 +1,11 @@
-import { GraduationCap, LayoutDashboard, BookOpen, Users, ClipboardList, LogOut, ChevronRight } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, BookOpen, Users, ClipboardList, LogOut, ChevronRight, UserCircle } from 'lucide-react';
 import Avatar from './ui/Avatar.jsx';
 
 const NAV_CONFIGS = {
   superadmin: [
     { icon: LayoutDashboard, label: 'Overview',         id: 'overview' },
     { icon: Users,          label: 'Lecturer Management', id: 'lecturers' },
+    { icon: UserCircle,     label: 'Student Management',  id: 'students' },
     { icon: BookOpen,       label: 'Course Management', id: 'courses' },
     { icon: ClipboardList,  label: 'Sessions',          id: 'sessions' },
   ],

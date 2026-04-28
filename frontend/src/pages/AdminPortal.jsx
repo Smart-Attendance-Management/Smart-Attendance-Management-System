@@ -1,8 +1,7 @@
 import { useState, Fragment } from 'react';
-import { Users, BookOpen, Activity, Plus, Search, Edit2, Trash2, Check } from 'lucide-react';
+import { Users, BookOpen, Activity, Plus, Search, Edit2, Trash2, Check, UserCircle } from 'lucide-react';
 import Avatar from '../components/ui/Avatar.jsx';
 import Modal from '../components/ui/Modal.jsx';
-import { LECTURERS, COURSES } from '../data/dummyData.js';
 
 // ─── Stat Cards ────────────────────────────────────────────────────────────────
 function StatCard({ icon: Icon, label, value, bg, fg }) {
@@ -20,7 +19,7 @@ function StatCard({ icon: Icon, label, value, bg, fg }) {
 }
 
 // ─── Create Lecturer Modal ──────────────────────────────────────────────────────
-function CreateLecturerModal({ onClose, onSave }) {
+function CreateLecturerModal({ onClose, onSave, courses }) {
   const [form, setForm] = useState({ name: '', email: '', dept: '', courseIds: [] });
   const [errors, setErrors] = useState({});
 
@@ -86,7 +85,7 @@ function CreateLecturerModal({ onClose, onSave }) {
       <div className="form-group">
         <label className="form-label">Assign Courses (multi-select)</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-          {COURSES.map(c => {
+          {courses.map(c => {
             const selected = form.courseIds.includes(c.id);
             return (
               <button
@@ -107,17 +106,111 @@ function CreateLecturerModal({ onClose, onSave }) {
             );
           })}
         </div>
-        {form.courseIds.length > 0 && (
-          <p style={{ fontSize: 12, color: '#009688', marginTop: 8 }}>
-            ✓ {form.courseIds.length} course{form.courseIds.length > 1 ? 's' : ''} selected
-          </p>
-        )}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
         <button className="btn-outline" onClick={onClose}>Cancel</button>
         <button className="btn-primary" onClick={handleSave}>
           <Plus size={16} /> Create Lecturer
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Create Student Modal ───────────────────────────────────────────────────────
+function CreateStudentModal({ onClose, onSave, courses }) {
+  const [form, setForm] = useState({ name: '', email: '', matric: '', courseIds: [] });
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim())   e.name   = 'Name is required';
+    if (!form.matric.trim()) e.matric = 'Matric number is required';
+    if (!form.email.trim())  e.email  = 'Email is required';
+    return e;
+  };
+
+  const toggle = (id) => {
+    setForm(f => ({
+      ...f,
+      courseIds: f.courseIds.includes(id)
+        ? f.courseIds.filter(c => c !== id)
+        : [...f.courseIds, id],
+    }));
+  };
+
+  const handleSave = () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    onSave(form);
+    onClose();
+  };
+
+  return (
+    <Modal title="Add New Student" subtitle="Register a student and enroll them in courses" onClose={onClose}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="form-group">
+          <label className="form-label">Full Name *</label>
+          <input
+            className={`form-input${errors.name ? ' border-red-400' : ''}`}
+            placeholder="Alice Johnson"
+            value={form.name}
+            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Matric Number *</label>
+          <input
+            className={`form-input${errors.matric ? ' border-red-400' : ''}`}
+            placeholder="UNI/2021/001"
+            value={form.matric}
+            onChange={e => setForm(f => ({ ...f, matric: e.target.value.toUpperCase() }))}
+          />
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Email Address *</label>
+        <input
+          className={`form-input${errors.email ? ' border-red-400' : ''}`}
+          type="email"
+          placeholder="student@university.edu"
+          value={form.email}
+          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+        />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Enroll in Courses</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+          {courses.map(c => {
+            const selected = form.courseIds.includes(c.id);
+            return (
+              <button
+                key={c.id}
+                onClick={() => toggle(c.id)}
+                style={{
+                  padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600,
+                  border: `1.5px solid ${selected ? '#009688' : '#e5e7eb'}`,
+                  background: selected ? '#e0f2f1' : '#fff',
+                  color: selected ? '#009688' : '#6b7280',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                }}
+              >
+                {selected && <Check size={12} />}
+                {c.code}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+        <button className="btn-outline" onClick={onClose}>Cancel</button>
+        <button className="btn-primary" onClick={handleSave}>
+          <Plus size={16} /> Add Student
         </button>
       </div>
     </Modal>
@@ -154,7 +247,6 @@ function CreateCourseModal({ onClose, onSave }) {
           value={form.code}
           onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
         />
-        {errors.code && <p style={{ color: '#dc2626', fontSize: 12, marginTop: 4 }}>{errors.code}</p>}
       </div>
 
       <div className="form-group">
@@ -165,7 +257,6 @@ function CreateCourseModal({ onClose, onSave }) {
           value={form.name}
           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
         />
-        {errors.name && <p style={{ color: '#dc2626', fontSize: 12, marginTop: 4 }}>{errors.name}</p>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -192,11 +283,10 @@ function CreateCourseModal({ onClose, onSave }) {
             value={form.dept}
             onChange={e => setForm(f => ({ ...f, dept: e.target.value }))}
           />
-          {errors.dept && <p style={{ color: '#dc2626', fontSize: 12, marginTop: 4 }}>{errors.dept}</p>}
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
         <button className="btn-outline" onClick={onClose}>Cancel</button>
         <button className="btn-primary" onClick={handleSave}>
           <Plus size={16} /> Create Course
@@ -207,16 +297,16 @@ function CreateCourseModal({ onClose, onSave }) {
 }
 
 // ─── Overview Page ──────────────────────────────────────────────────────────────
-function OverviewPage({ lecturers, courses, onGoTo }) {
+function OverviewPage({ lecturers, courses, students, onGoTo }) {
   return (
     <>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 32 }}>
         <StatCard icon={Users}    label="Total Lecturers"       value={lecturers.length}     bg="#e0f2f1" fg="#009688" />
+        <StatCard icon={UserCircle} label="Total Students"      value={students.length}      bg="#fef3c7" fg="#d97706" />
         <StatCard icon={BookOpen} label="Total Courses"         value={courses.length}       bg="#dbeafe" fg="#2563eb" />
         <StatCard icon={Activity} label="Active Sessions"       value={2}                    bg="#dcfce7" fg="#16a34a" />
       </div>
 
-      {/* Quick overview table */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
@@ -252,7 +342,7 @@ function OverviewPage({ lecturers, courses, onGoTo }) {
                   <td>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {l.courseIds.map(cid => {
-                        const c = COURSES.find(x => x.id === cid);
+                        const c = courses.find(x => x.id === cid);
                         return c ? <span key={cid} className="tag">{c.code}</span> : null;
                       })}
                     </div>
@@ -265,13 +355,12 @@ function OverviewPage({ lecturers, courses, onGoTo }) {
         </div>
       </div>
 
-      {/* Courses */}
       <div className="card">
         <div className="section-title" style={{ marginBottom: 4 }}>Course Registry</div>
         <div className="section-sub">All courses currently in the system</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16, marginTop: 16 }}>
           {courses.map(c => {
-            const lect = LECTURERS.find(l => l.courseIds.includes(c.id));
+            const lect = lecturers.find(l => l.courseIds.includes(c.id));
             return (
               <div key={c.id} className="course-card">
                 <div className="course-card-accent" />
@@ -300,7 +389,7 @@ function OverviewPage({ lecturers, courses, onGoTo }) {
 }
 
 // ─── Lecturers Management Page ──────────────────────────────────────────────────
-function LecturersPage({ lecturers, setLecturers, showCreate, setShowCreate }) {
+function LecturersPage({ lecturers, setLecturers, showCreate, setShowCreate, courses }) {
   const [search, setSearch] = useState('');
   const [expandedRow, setExpandedRow] = useState(null);
 
@@ -333,6 +422,7 @@ function LecturersPage({ lecturers, setLecturers, showCreate, setShowCreate }) {
         <CreateLecturerModal
           onClose={() => setShowCreate(false)}
           onSave={handleSave}
+          courses={courses}
         />
       )}
 
@@ -342,20 +432,15 @@ function LecturersPage({ lecturers, setLecturers, showCreate, setShowCreate }) {
             <div className="section-title">Lecturer Management</div>
             <div className="section-sub">{filtered.length} lecturer{filtered.length !== 1 ? 's' : ''} found</div>
           </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className="input-icon-wrap">
-              <Search size={16} className="icon-left" />
-              <input
-                className="form-input"
-                style={{ paddingLeft: 36, width: 220 }}
-                placeholder="Search lecturers…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-            <button className="btn-primary" onClick={() => setShowCreate(true)}>
-              <Plus size={16} /> New Lecturer
-            </button>
+          <div className="input-icon-wrap">
+            <Search size={16} className="icon-left" />
+            <input
+              className="form-input"
+              style={{ paddingLeft: 36, width: 220 }}
+              placeholder="Search lecturers…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
           </div>
         </div>
 
@@ -390,7 +475,7 @@ function LecturersPage({ lecturers, setLecturers, showCreate, setShowCreate }) {
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                         {l.courseIds.length > 0
                           ? l.courseIds.map(cid => {
-                              const c = COURSES.find(x => x.id === cid);
+                              const c = courses.find(x => x.id === cid);
                               return c ? <span key={cid} className="tag">{c.code}</span> : null;
                             })
                           : <span style={{ color: '#9ca3af', fontSize: 12 }}>None</span>}
@@ -399,19 +484,8 @@ function LecturersPage({ lecturers, setLecturers, showCreate, setShowCreate }) {
                     <td><span className="badge badge-green">Active</span></td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
-                        <button
-                          title="Edit"
-                          style={{ background: '#f3f4f6', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280' }}
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          title="Delete"
-                          onClick={() => handleDelete(l.id)}
-                          style={{ background: '#fee2e2', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626' }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <button style={{ background: '#f3f4f6', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280' }}><Edit2 size={14} /></button>
+                        <button onClick={() => handleDelete(l.id)} style={{ background: '#fee2e2', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626' }}><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -421,7 +495,7 @@ function LecturersPage({ lecturers, setLecturers, showCreate, setShowCreate }) {
                         <div style={{ fontWeight: 600, color: '#009688', marginBottom: 10 }}>Assigned Courses Detail</div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
                           {l.courseIds.map(cid => {
-                            const c = COURSES.find(x => x.id === cid);
+                            const c = courses.find(x => x.id === cid);
                             return c ? (
                               <div key={cid} style={{ background: '#fff', borderRadius: 10, padding: '12px 16px', border: '1px solid #e0f2f1' }}>
                                 <div style={{ fontSize: 11, color: '#009688', fontWeight: 700 }}>{c.code}</div>
@@ -436,13 +510,109 @@ function LecturersPage({ lecturers, setLecturers, showCreate, setShowCreate }) {
                   )}
                 </Fragment>
               ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
-                    No lecturers match your search.
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Students Management Page ───────────────────────────────────────────────────
+function StudentsPage({ students, setStudents, showCreate, setShowCreate, courses }) {
+  const [search, setSearch] = useState('');
+
+  const filtered = students.filter(s =>
+    s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.matric.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleSave = (form) => {
+    setStudents(prev => [
+      ...prev,
+      {
+        id: `s${Date.now()}`,
+        name: form.name,
+        email: form.email,
+        matric: form.matric,
+        avatar: form.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
+        courseIds: form.courseIds,
+      },
+    ]);
+  };
+
+  const handleDelete = (id) => {
+    setStudents(prev => prev.filter(s => s.id !== id));
+  };
+
+  return (
+    <>
+      {showCreate && (
+        <CreateStudentModal
+          onClose={() => setShowCreate(false)}
+          onSave={handleSave}
+          courses={courses}
+        />
+      )}
+
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div>
+            <div className="section-title">Student Registry</div>
+            <div className="section-sub">{filtered.length} student{filtered.length !== 1 ? 's' : ''} enrolled</div>
+          </div>
+          <div className="input-icon-wrap">
+            <Search size={16} className="icon-left" />
+            <input
+              className="form-input"
+              style={{ paddingLeft: 36, width: 220 }}
+              placeholder="Search matric or name…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Matric No.</th>
+                <th>Enrolled Courses</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(s => (
+                <tr key={s.id}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Avatar name={s.name} size={36} />
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#1a1a2e' }}>{s.name}</div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>{s.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{s.matric}</span></td>
+                  <td>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {s.courseIds.map(cid => {
+                        const c = courses.find(x => x.id === cid);
+                        return c ? <span key={cid} className="tag">{c.code}</span> : null;
+                      })}
+                      {s.courseIds.length === 0 && <span style={{ color: '#9ca3af', fontSize: 12 }}>No courses assigned</span>}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                      <button style={{ background: '#f3f4f6', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280' }}><Edit2 size={14} /></button>
+                      <button onClick={() => handleDelete(s.id)} style={{ background: '#fee2e2', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626' }}><Trash2 size={14} /></button>
+                    </div>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
@@ -452,7 +622,7 @@ function LecturersPage({ lecturers, setLecturers, showCreate, setShowCreate }) {
 }
 
 // ─── Courses Page ───────────────────────────────────────────────────────────────
-function CoursesPage({ courses, setCourses, showCreate, setShowCreate }) {
+function CoursesPage({ courses, setCourses, showCreate, setShowCreate, lecturers }) {
   const handleSave = (form) => {
     setCourses(prev => [
       ...prev,
@@ -481,43 +651,40 @@ function CoursesPage({ courses, setCourses, showCreate, setShowCreate }) {
             <div className="section-title">Course Management</div>
             <div className="section-sub">{courses.length} course{courses.length !== 1 ? 's' : ''} available</div>
           </div>
-          <button className="btn-primary" onClick={() => setShowCreate(true)}>
-            <Plus size={16} /> New Course
-          </button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
           {courses.map((c, i) => {
-          const lect = LECTURERS.find(l => l.courseIds.includes(c.id));
-          const colors = ['#009688','#2563eb','#7c3aed','#be185d','#ca8a04','#16a34a'];
-          const col = colors[i % colors.length];
-          return (
-            <div key={c.id} className="course-card">
-              <div className="course-card-accent" style={{ background: col }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 11, color: col, fontWeight: 700, letterSpacing: '0.5px' }}>{c.code}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e', marginTop: 2 }}>{c.name}</div>
+            const lect = lecturers.find(l => l.courseIds.includes(c.id));
+            const colors = ['#009688','#2563eb','#7c3aed','#be185d','#ca8a04','#16a34a'];
+            const col = colors[i % colors.length];
+            return (
+              <div key={c.id} className="course-card">
+                <div className="course-card-accent" style={{ background: col }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: col, fontWeight: 700, letterSpacing: '0.5px' }}>{c.code}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e', marginTop: 2 }}>{c.name}</div>
+                  </div>
+                  <span className="badge badge-blue">{c.credits} Cr.</span>
                 </div>
-                <span className="badge badge-blue">{c.credits} Cr.</span>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 12 }}>{c.dept}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                  {lect ? (
+                    <>
+                      <Avatar name={lect.name} size={28} />
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{lect.name}</div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Instructor</div>
+                      </div>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: 12, color: '#9ca3af' }}>No instructor assigned</span>
+                  )}
+                </div>
               </div>
-              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 12 }}>{c.dept}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                {lect ? (
-                  <>
-                    <Avatar name={lect.name} size={28} />
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{lect.name}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Instructor</div>
-                    </div>
-                  </>
-                ) : (
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>No instructor assigned</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
         </div>
       </div>
     </>
@@ -577,14 +744,18 @@ function SessionsPage() {
 }
 
 // ─── Main SuperAdmin Dashboard ──────────────────────────────────────────────────
-export default function SuperAdminDashboard({ activePage, setActivePage }) {
-  const [lecturers, setLecturers] = useState(LECTURERS);
-  const [courses, setCourses]     = useState(COURSES);
+export default function SuperAdminPortal({ 
+  activePage, setActivePage,
+  lecturers, setLecturers,
+  courses, setCourses,
+  students, setStudents
+}) {
   const [showCreate, setShowCreate] = useState(false);
 
   const titles = {
     overview:  { title: 'Dashboard Overview', sub: 'Welcome back, Super Admin' },
     lecturers: { title: 'Lecturer Management', sub: 'Manage all lecturers and course assignments' },
+    students:  { title: 'Student Management',  sub: 'Manage student enrollment and registry' },
     courses:   { title: 'Course Management', sub: 'All registered courses in the system' },
     sessions:  { title: 'Attendance Sessions', sub: 'Monitor all active and closed sessions' },
   };
@@ -592,28 +763,39 @@ export default function SuperAdminDashboard({ activePage, setActivePage }) {
 
   return (
     <>
-      {/* Page header */}
       <div className="page-header">
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#1a1a2e' }}>{title}</h1>
           <p style={{ margin: 0, fontSize: 13, color: '#9ca3af' }}>{sub}</p>
         </div>
-        {(activePage === 'lecturers' || activePage === 'courses') && (
+        {(activePage === 'lecturers' || activePage === 'courses' || activePage === 'students') && (
           <button className="btn-primary" onClick={() => setShowCreate(true)}>
-            <Plus size={16} /> New {activePage === 'lecturers' ? 'Lecturer' : 'Course'}
+            <Plus size={16} /> New {
+              activePage === 'lecturers' ? 'Lecturer' : 
+              activePage === 'students' ? 'Student' : 'Course'
+            }
           </button>
         )}
       </div>
 
-      {/* Page body */}
       <div className="page-body">
-        {activePage === 'overview'  && <OverviewPage lecturers={lecturers} courses={courses} onGoTo={setActivePage} />}
+        {activePage === 'overview'  && <OverviewPage lecturers={lecturers} courses={courses} students={students} onGoTo={setActivePage} />}
         {activePage === 'lecturers' && (
           <LecturersPage
             lecturers={lecturers}
             setLecturers={setLecturers}
             showCreate={showCreate}
             setShowCreate={setShowCreate}
+            courses={courses}
+          />
+        )}
+        {activePage === 'students' && (
+          <StudentsPage
+            students={students}
+            setStudents={setStudents}
+            showCreate={showCreate}
+            setShowCreate={setShowCreate}
+            courses={courses}
           />
         )}
         {activePage === 'courses'   && (
@@ -621,7 +803,8 @@ export default function SuperAdminDashboard({ activePage, setActivePage }) {
             courses={courses} 
             setCourses={setCourses} 
             showCreate={showCreate} 
-            setShowCreate={setShowCreate} 
+            setShowCreate={setShowCreate}
+            lecturers={lecturers}
           />
         )}
         {activePage === 'sessions'  && <SessionsPage />}

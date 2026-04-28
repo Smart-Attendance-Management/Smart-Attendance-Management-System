@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import {
   Play, MapPin, Loader2, Copy, Check, Users, BookOpen,
-  UserPlus, ChevronDown, ChevronUp, Clock, X,
+  UserPlus, Clock, X,
 } from 'lucide-react';
 import Avatar from '../components/ui/Avatar.jsx';
 import Modal from '../components/ui/Modal.jsx';
 import {
-  CURRENT_LECTURER, COURSES, STUDENTS, ATTENDANCE_RECORDS,
+  ATTENDANCE_RECORDS,
   calcAttendance, generateSessionId, getEnrolledStudents,
 } from '../data/dummyData.js';
 
@@ -24,10 +24,10 @@ function ProgressBar({ pct }) {
 }
 
 // ─── Attendance History Modal ────────────────────────────────────────────────
-function HistoryModal({ student, courseId, onClose }) {
-  const records = ATTENDANCE_RECORDS[courseId]?.[student.id] || [];
+function HistoryModal({ student, course, onClose }) {
+  const records = ATTENDANCE_RECORDS[course.id]?.[student.id] || [];
   return (
-    <Modal title={`${student.name} — Attendance Log`} subtitle={COURSES.find(c => c.id === courseId)?.name} onClose={onClose} width={480}>
+    <Modal title={`${student.name} — Attendance Log`} subtitle={course.name} onClose={onClose} width={480}>
       {records.length === 0
         ? <p style={{ textAlign: 'center', color: '#9ca3af', padding: '24px 0' }}>No records found.</p>
         : (
@@ -60,23 +60,34 @@ function HistoryModal({ student, courseId, onClose }) {
 }
 
 // ─── Enroll Student Modal ─────────────────────────────────────────────────────
-function EnrollModal({ courseId, onClose, onEnroll }) {
+function EnrollModal({ course, onClose, students, setStudents }) {
   const [query, setQuery] = useState('');
   const [enrolled, setEnrolled] = useState([]);
-  const existing = Object.keys(ATTENDANCE_RECORDS[courseId] || {});
-  const available = STUDENTS.filter(s => !existing.includes(s.id) && !enrolled.includes(s.id));
+  
+  // Students NOT in this course
+  const available = students.filter(s => !s.courseIds.includes(course.id));
   const filtered = available.filter(s =>
     s.name.toLowerCase().includes(query.toLowerCase()) ||
     s.matric.toLowerCase().includes(query.toLowerCase()) ||
     s.email.toLowerCase().includes(query.toLowerCase())
   );
 
+  const handleEnroll = (studentId) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        return { ...s, courseIds: [...s.courseIds, course.id] };
+      }
+      return s;
+    }));
+    setEnrolled(prev => [...prev, studentId]);
+  };
+
   return (
-    <Modal title="Enroll Student" subtitle="Search and add a student to this course" onClose={onClose} width={460}>
+    <Modal title="Enroll Student" subtitle={`Add a student to ${course.code}`} onClose={onClose} width={460}>
       <div className="form-group">
         <input
           className="form-input"
-          placeholder="Search by name, matric number or email…"
+          placeholder="Search registered students…"
           value={query}
           onChange={e => setQuery(e.target.value)}
           autoFocus
@@ -85,7 +96,7 @@ function EnrollModal({ courseId, onClose, onEnroll }) {
       <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {filtered.length === 0 && (
           <p style={{ textAlign: 'center', color: '#9ca3af', padding: '20px 0', fontSize: 13 }}>
-            No available students match.
+            No unregistered students match.
           </p>
         )}
         {filtered.map(s => (
@@ -99,22 +110,23 @@ function EnrollModal({ courseId, onClose, onEnroll }) {
               <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a2e' }}>{s.name}</div>
               <div style={{ fontSize: 12, color: '#9ca3af' }}>{s.matric}</div>
             </div>
-            <button
-              className="btn-primary"
-              style={{ padding: '6px 14px', fontSize: 12 }}
-              onClick={() => {
-                setEnrolled(prev => [...prev, s.id]);
-                onEnroll(s.id);
-              }}
-            >
-              <UserPlus size={13} /> Enroll
-            </button>
+            {!enrolled.includes(s.id) ? (
+              <button
+                className="btn-primary"
+                style={{ padding: '6px 14px', fontSize: 12 }}
+                onClick={() => handleEnroll(s.id)}
+              >
+                <UserPlus size={13} /> Enroll
+              </button>
+            ) : (
+              <span className="badge badge-green">✓ Added</span>
+            )}
           </div>
         ))}
       </div>
       {enrolled.length > 0 && (
         <div className="alert alert-success" style={{ marginTop: 16 }}>
-          ✓ {enrolled.length} student{enrolled.length > 1 ? 's' : ''} enrolled successfully!
+          ✓ {enrolled.length} student{enrolled.length > 1 ? 's' : ''} added to course.
         </div>
       )}
     </Modal>
@@ -189,29 +201,26 @@ function StartSessionPanel({ course }) {
 }
 
 // ─── Course Detail Panel ──────────────────────────────────────────────────────
-function CourseDetailPanel({ course, onBack }) {
+function CourseDetailPanel({ course, onBack, students, setStudents }) {
   const [showEnroll, setShowEnroll] = useState(false);
   const [historyModal, setHistoryModal] = useState(null);
-  const [extraStudents, setExtraStudents] = useState([]);
 
-  const enrolled = [
-    ...getEnrolledStudents(course.id),
-    ...extraStudents.map(id => STUDENTS.find(s => s.id === id)).filter(Boolean),
-  ];
+  const enrolled = getEnrolledStudents(course.id, students);
 
   return (
     <>
       {showEnroll && (
         <EnrollModal
-          courseId={course.id}
+          course={course}
           onClose={() => setShowEnroll(false)}
-          onEnroll={id => setExtraStudents(prev => [...prev, id])}
+          students={students}
+          setStudents={setStudents}
         />
       )}
       {historyModal && (
         <HistoryModal
           student={historyModal}
-          courseId={course.id}
+          course={course}
           onClose={() => setHistoryModal(null)}
         />
       )}
@@ -300,9 +309,9 @@ function CourseDetailPanel({ course, onBack }) {
 }
 
 // ─── Lecturer Overview ────────────────────────────────────────────────────────
-function LecturerOverview({ lecturer, onSelectCourse }) {
-  const myCourses = COURSES.filter(c => lecturer.courseIds.includes(c.id));
-  const totalStudents = myCourses.reduce((acc, c) => acc + getEnrolledStudents(c.id).length, 0);
+function LecturerOverview({ user, courses, students, onSelectCourse }) {
+  const myCourses = courses.filter(c => (user?.courseIds || []).includes(c.id));
+  const totalStudents = myCourses.reduce((acc, c) => acc + getEnrolledStudents(c.id, students).length, 0);
 
   return (
     <>
@@ -312,11 +321,11 @@ function LecturerOverview({ lecturer, onSelectCourse }) {
         borderRadius: 20, padding: '28px 32px', marginBottom: 28, color: '#fff',
         display: 'flex', alignItems: 'center', gap: 20,
       }}>
-        <Avatar name={lecturer.name} size={64} />
+        <Avatar name={user.name} size={64} />
         <div>
           <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 4, letterSpacing: '0.5px' }}>WELCOME BACK</div>
-          <div style={{ fontSize: 24, fontWeight: 800 }}>{lecturer.name}</div>
-          <div style={{ opacity: 0.8, fontSize: 14 }}>{lecturer.dept} · {myCourses.length} Courses · {totalStudents} Students</div>
+          <div style={{ fontSize: 24, fontWeight: 800 }}>{user.name}</div>
+          <div style={{ opacity: 0.8, fontSize: 14 }}>{user.dept} · {myCourses.length} Courses · {totalStudents} Students</div>
         </div>
       </div>
 
@@ -325,9 +334,9 @@ function LecturerOverview({ lecturer, onSelectCourse }) {
       <div className="section-sub">Click a course to manage attendance and students</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20, marginTop: 8 }}>
         {myCourses.map((c, i) => {
-          const students = getEnrolledStudents(c.id);
-          const avgPct = students.length === 0 ? 0 : Math.round(
-            students.reduce((acc, s) => acc + calcAttendance(ATTENDANCE_RECORDS[c.id]?.[s.id] || []), 0) / students.length
+          const enrolled = getEnrolledStudents(c.id, students);
+          const avgPct = enrolled.length === 0 ? 0 : Math.round(
+            enrolled.reduce((acc, s) => acc + calcAttendance(ATTENDANCE_RECORDS[c.id]?.[s.id] || []), 0) / enrolled.length
           );
           const colors = ['#009688', '#2563eb', '#7c3aed', '#be185d'];
           const col = colors[i % colors.length];
@@ -336,7 +345,7 @@ function LecturerOverview({ lecturer, onSelectCourse }) {
               <div className="course-card-accent" style={{ background: col }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ fontSize: 11, color: col, fontWeight: 700, letterSpacing: '0.5px' }}>{c.code}</span>
-                <span className="badge badge-teal">{students.length} Students</span>
+                <span className="badge badge-teal">{enrolled.length} Students</span>
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, color: '#1a1a2e', marginBottom: 4 }}>{c.name}</div>
               <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 14 }}>{c.dept}</div>
@@ -368,13 +377,15 @@ function LecturerOverview({ lecturer, onSelectCourse }) {
 }
 
 // ─── Main Lecturer Dashboard ─────────────────────────────────────────────────
-export default function LecturerDashboard({ activePage, setActivePage }) {
-  const lecturer = CURRENT_LECTURER;
-  const myCourses = COURSES.filter(c => lecturer.courseIds.includes(c.id));
+export default function LecturerDashboard({ 
+  activePage, setActivePage, user, 
+  courses, students, setStudents 
+}) {
+  const myCourses = courses.filter(c => (user?.courseIds || []).includes(c.id));
   const [selectedCourse, setSelectedCourse] = useState(null);
 
   const titles = {
-    overview:   { title: 'My Dashboard', sub: `Welcome, ${lecturer.name}` },
+    overview:   { title: 'My Dashboard', sub: `Welcome, ${user.name}` },
     courses:    { title: 'My Courses', sub: 'Manage sessions and attendance' },
     attendance: { title: 'Attendance Records', sub: 'Full attendance overview' },
     students:   { title: 'Students', sub: 'All students across your courses' },
@@ -398,17 +409,17 @@ export default function LecturerDashboard({ activePage, setActivePage }) {
 
       <div className="page-body">
         {(activePage === 'overview') && !selectedCourse && (
-          <LecturerOverview lecturer={lecturer} onSelectCourse={c => { setSelectedCourse(c); setActivePage('courses'); }} />
+          <LecturerOverview user={user} courses={courses} students={students} onSelectCourse={c => { setSelectedCourse(c); setActivePage('courses'); }} />
         )}
         {(activePage === 'courses') && (
           selectedCourse
-            ? <CourseDetailPanel course={selectedCourse} onBack={() => setSelectedCourse(null)} />
-            : <LecturerOverview lecturer={lecturer} onSelectCourse={c => setSelectedCourse(c)} />
+            ? <CourseDetailPanel course={selectedCourse} onBack={() => setSelectedCourse(null)} students={students} setStudents={setStudents} />
+            : <LecturerOverview user={user} courses={courses} students={students} onSelectCourse={c => setSelectedCourse(c)} />
         )}
         {activePage === 'attendance' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {myCourses.map(c => {
-              const students = getEnrolledStudents(c.id);
+              const enrolled = getEnrolledStudents(c.id, students);
               return (
                 <div key={c.id} className="card">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -426,7 +437,7 @@ export default function LecturerDashboard({ activePage, setActivePage }) {
                         <tr><th>Student</th><th>Attendance</th><th>Present</th><th>Total</th></tr>
                       </thead>
                       <tbody>
-                        {students.map(s => {
+                        {enrolled.map(s => {
                           const recs = ATTENDANCE_RECORDS[c.id]?.[s.id] || [];
                           const pct = calcAttendance(recs);
                           const present = recs.filter(r => r.status === 'present').length;
@@ -462,8 +473,8 @@ export default function LecturerDashboard({ activePage, setActivePage }) {
                   <tr><th>Student</th><th>Matric No.</th><th>Email</th><th>Courses</th></tr>
                 </thead>
                 <tbody>
-                  {STUDENTS.filter(s => myCourses.some(c => ATTENDANCE_RECORDS[c.id]?.[s.id])).map(s => {
-                    const enrolled = myCourses.filter(c => ATTENDANCE_RECORDS[c.id]?.[s.id]);
+                  {students.filter(s => myCourses.some(c => s.courseIds.includes(c.id))).map(s => {
+                    const enrolled = myCourses.filter(c => s.courseIds.includes(c.id));
                     return (
                       <tr key={s.id}>
                         <td>
