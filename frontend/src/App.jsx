@@ -2,7 +2,6 @@ import { useState } from 'react';
 import './index.css';
 
 import Sidebar        from './components/Sidebar.jsx';
-import RoleSwitcher   from './components/RoleSwitcher.jsx';
 import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx';
 import LecturerDashboard   from './pages/LecturerDashboard.jsx';
 import StudentDashboard    from './pages/StudentDashboard.jsx';
@@ -31,12 +30,6 @@ export default function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setUser(null);
-  };
-
-  // When role changes via the switcher (for demo purposes)
-  const handleRoleChange = (newRole) => {
-    setRole(newRole);
-    setActivePage(DEFAULT_PAGE[newRole] || 'overview');
   };
 
   if (!isAuthenticated) {
@@ -68,13 +61,10 @@ export default function App() {
             user={user}
           />
 
-          {/* Bottom spacer so content isn't hidden behind the role switcher */}
-          <div style={{ height: 80 }} />
+          {/* Bottom spacer */}
+          <div style={{ height: 40 }} />
         </main>
       </div>
-
-      {/* Floating role switcher – always on top (Keep for demo/dev) */}
-      <RoleSwitcher role={role} setRole={handleRoleChange} />
     </>
   );
 }

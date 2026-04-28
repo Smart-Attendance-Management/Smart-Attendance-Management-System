@@ -529,3 +529,45 @@ tbody tr:hover td { background: #fafffe; }
   color: #009688;
   border-color: #009688;
 }
+
+/* Trial Dropdown */
+.trial-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trial-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+.trial-dropdown button:hover {
+  background: #f0fdfa;
+  color: #009688;
+}
+.trial-dropdown button svg {
+  color: #9ca3af;
+}
+.trial-dropdown button:hover svg {
+  color: #009688;
+}

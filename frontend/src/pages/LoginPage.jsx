@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Mail, Lock, LogIn, ShieldCheck, UserCircle, GraduationCap, AlertCircle } from 'lucide-react';
+import { Mail, Lock, LogIn, ShieldCheck, UserCircle, GraduationCap, AlertCircle, ChevronDown, Play } from 'lucide-react';
 
 export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showTrial, setShowTrial] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -30,6 +31,15 @@ export default function LoginPage({ onLogin }) {
         setLoading(false);
       }
     }, 800);
+  };
+
+  const handleQuickLogin = (role) => {
+    const creds = {
+      superadmin: { email: 'admin@admin.com', role: 'superadmin' },
+      lecturer:   { email: 'lecturer@lecturer.com', role: 'lecturer' },
+      student:    { email: 'student@student.com', role: 'student' }
+    };
+    onLogin(creds[role]);
   };
 
   return (
@@ -98,19 +108,30 @@ export default function LoginPage({ onLogin }) {
           </button>
         </form>
 
-        <div className="login-footer">
-          <p>Demo Credentials:</p>
-          <div className="demo-chips">
-            <div className="demo-chip" title="admin@admin.com / admin123">
-              <ShieldCheck size={12} /> Admin
+        <div className="login-footer" style={{ position: 'relative' }}>
+          <button 
+            className="btn-outline" 
+            style={{ width: '100%', justifyContent: 'center', gap: 8, borderStyle: 'dashed' }}
+            onClick={() => setShowTrial(!showTrial)}
+          >
+            <Play size={16} /> 
+            Try Trial Mode
+            <ChevronDown size={14} style={{ transform: showTrial ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+
+          {showTrial && (
+            <div className="trial-dropdown animate-pop">
+              <button onClick={() => handleQuickLogin('superadmin')}>
+                <ShieldCheck size={14} /> Login as Admin
+              </button>
+              <button onClick={() => handleQuickLogin('lecturer')}>
+                <UserCircle size={14} /> Login as Lecturer
+              </button>
+              <button onClick={() => handleQuickLogin('student')}>
+                <GraduationCap size={14} /> Login as Student
+              </button>
             </div>
-            <div className="demo-chip" title="lecturer@lecturer.com / lecturer123">
-              <UserCircle size={12} /> Lecturer
-            </div>
-            <div className="demo-chip" title="student@student.com / student123">
-              <GraduationCap size={12} /> Student
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
